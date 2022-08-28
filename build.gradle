@@ -1,0 +1,123 @@
+plugins {
+    id 'java'
+}
+
+group 'io.xpipe'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+// Some general java compilation settings
+tasks.withType(JavaCompile).configureEach {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+    modularity.inferModulePath = true
+    options.encoding = 'UTF-8'
+    // This is useful for Jackson serialization
+    options.compilerArgs << '-parameters'
+
+}
+
+javadoc {
+    source = sourceSets.main.allJava
+    options {
+        addStringOption('-release', '17')
+        addStringOption('link', 'https://docs.oracle.com/en/java/javase/17/docs/api/')
+        addBooleanOption('html5', true)
+        addStringOption('Xdoclint:none', '-quiet')
+    }
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        exceptionFormat = 'full'
+        showStandardStreams = true
+    }
+}
+
+sourceSets {
+    test {
+        // Disable test compilation on non IntelliJ based platforms,
+        // as other ides do not like modularized tests and refuse to compile
+        if (System.getProperty('idea.active') == null) {
+            java {
+                srcDirs = []
+            }
+        }
+
+        // Fix to make resources available in tests
+        output.resourcesDir("$buildDir/classes/java/test")
+    }
+}
+
+// Copies all required libraries to the output directory
+// Note that only libraries that are not already supplied by the X-Pipe daemon are required to be supplied
+task copyRuntimeLibs(type: Copy) {
+    into "$buildDir/libs"
+    from configurations.runtimeClasspath
+    exclude "${project.name}.jar"
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+}
+jar.finalizedBy(copyRuntimeLibs)
+
+// Junit dependencies
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+// Javafx dependencies. Not that the exact version and platform do not matter here
+// as these dependencies are only used for compilation. The proper libraries for
+// your platform and version are supplied by X-Pipe in the runtime environment
+dependencies {
+    compileOnly "org.openjfx:javafx-base:18:win"
+    compileOnly "org.openjfx:javafx-graphics:18:win"
+    compileOnly "org.openjfx:javafx-controls:18:win"
+}
+
+dependencies {
+    // The required X-Pipe apis
+    compileOnly 'io.xpipe:core:0.0.1.5-SNAPSHOT'
+    compileOnly 'io.xpipe:extension:0.0.1.5-SNAPSHOT'
+
+    // Jackson annotations needed to indicate that our custom data source is serializable.
+    // In case you need to perform a more complex serialization, you can also add your require Jackson libraries here.
+    compileOnly group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: "2.13.0"
+
+    // X-pipe libraries needed to communicate with the daemon from the testing environment
+    testImplementation 'io.xpipe:extension:0.0.1.5-SNAPSHOT'
+    testImplementation 'io.xpipe:api:0.0.1.5-SNAPSHOT'
+    testImplementation 'io.xpipe:core:0.0.1.5-SNAPSHOT'
+
+    // Lombok libraries to make data source definitions more condensed
+    // If you don't like to use lombok, just remove these dependencies
+    compileOnly 'org.projectlombok:lombok:1.18.22'
+    annotationProcessor 'org.projectlombok:lombok:1.18.22'
+
+    testCompileOnly 'org.projectlombok:lombok:1.18.22'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.22'
+}
+
+test {
+    workingDir = rootDir
+
+    // Daemon properties. The X-Pipe daemon gets launched from the testing
+    // environment, so we are able to pass configuration options to it
+    systemProperty "io.xpipe.beacon.daemonArgs", "-Dio.xpipe.app.mode=tray" +
+            " -Dio.xpipe.beacon.port=21723" +
+            " -Dio.xpipe.beacon.launchDebug=true" +
+            " -Dio.xpipe.beacon.attachDebugger=false" +
+            " -Dio.xpipe.app.dataDir=$projectDir/local/" +
+            " -Dio.xpipe.storage.persist=false"
+
+    // Client properties
+    systemProperty 'io.xpipe.beacon.debugOutput', "true"
+    systemProperty 'io.xpipe.beacon.debugExecOutput', "true"
+    systemProperty "io.xpipe.beacon.port", "21723"
+}
