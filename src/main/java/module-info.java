@@ -1,3 +1,5 @@
+import io.xpipe.extension.DataSourceProvider;
+
 open module io.xpipe.ext.sample {
     exports io.xpipe.ext.sample;
 
@@ -7,4 +9,6 @@ open module io.xpipe.ext.sample {
 
     requires static lombok;
     requires static com.fasterxml.jackson.annotation;
+
+    provides DataSourceProvider with io.xpipe.ext.sample.SampleSourceProvider;
 }

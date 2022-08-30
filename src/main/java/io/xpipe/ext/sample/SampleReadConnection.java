@@ -42,6 +42,10 @@ public class SampleReadConnection extends StreamReadConnection implements TableR
         try (BufferedReader bufferedReader = new BufferedReader(reader)) {
             String line = null;
             while ((line = bufferedReader.readLine()) != null) {
+                if (line.trim().length() == 0) {
+                    continue;
+                }
+
                 var split = line.split("" + source.getDelimiter());
                 if (split.length != 2) {
                     throw new IllegalArgumentException("Not a valid row");

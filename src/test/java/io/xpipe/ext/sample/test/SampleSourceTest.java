@@ -17,13 +17,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-public class TextFileTest extends ExtensionTest {
+public class SampleSourceTest extends ExtensionTest {
 
-    static Path utf8SpacesFile = Path.of("ext/text/src/test/resources/utf8-bom-lf-spaces.txt").toAbsolutePath();
-    static Path utf16TabsFile = Path.of("ext/text/src/test/resources/utf16-crlf-tabs.txt").toAbsolutePath();
-    static Path appendReferenceFile = Path.of("ext/text/src/test/resources/append-reference.txt").toAbsolutePath();
+    // Use original resource files
+    // as we want to work with real files, not resource streams
+    static Path utf8SpacesFile = Path.of("src/test/resources/utf8-bom-lf-spaces.txt").toAbsolutePath();
+    static Path utf16TabsFile = Path.of("src/test/resources/utf16-crlf-tabs.txt").toAbsolutePath();
+    static Path appendReferenceFile = Path.of("src/test/resources/append-reference.txt").toAbsolutePath();
     static Path appendOutputFile;
-    static Path writeReferenceFile = Path.of("ext/text/src/test/resources/write-reference.txt").toAbsolutePath();
+    static Path writeReferenceFile = Path.of("src/test/resources/write-reference.txt").toAbsolutePath();
     static Path writeOutputFile;
 
     static DataSource utf8Spaces;
@@ -49,7 +51,7 @@ public class TextFileTest extends ExtensionTest {
         writeOutputFile = Files.createTempFile(null, null);
         writeOutput = DataSource.create(
                 null,
-                new SampleSource(FileStore.local(writeOutputFile), StreamCharset.UTF16_LE_BOM, NewLine.CRLF, ' ')
+                new SampleSource(FileStore.local(writeOutputFile), StreamCharset.UTF16_LE_BOM, NewLine.CRLF, '\t')
         );
     }
 
@@ -78,15 +80,15 @@ public class TextFileTest extends ExtensionTest {
                 null,
                 new SampleSource(FileStore.local(empty), StreamCharset.UTF32_BOM, NewLine.CRLF, ' ')
         );
-        emptySource.asText().forwardTo(writeOutput);
+        emptySource.forwardTo(writeOutput);
 
-        var first = utf8Spaces.asText();
+        var first = utf8Spaces.asTable();
         first.forwardTo(writeOutput);
-        var second = utf16Tabs.asText();
+        var second = utf16Tabs.asTable();
         second.forwardTo(writeOutput);
 
-        var text = writeOutput.asText().readAll();
-        var referenceText = writeReference.asText().readAll();
+        var text = writeOutput.asTable().readAll();
+        var referenceText = writeReference.asTable().readAll();
         Assertions.assertEquals(referenceText, text);
 
         var bytes = Files.readAllBytes(writeOutputFile);
@@ -96,14 +98,14 @@ public class TextFileTest extends ExtensionTest {
 
     @Test
     public void testAppend() throws IOException {
-        var first = utf8Spaces.asText();
+        var first = utf8Spaces.asTable();
         first.appendTo(appendOutput);
-        var second = utf16Tabs.asText();
+        var second = utf16Tabs.asTable();
         second.appendTo(appendOutput);
 
-        var text = appendOutput.asText().readAll();
-        var referenceText = appendReference.asText().readAll();
-        Assertions.assertEquals(referenceText, text);
+        var node = appendOutput.asTable().readAll();
+        var referenceNode = appendReference.asTable().readAll();
+        Assertions.assertEquals(referenceNode, node);
 
         var bytes = Files.readAllBytes(appendOutputFile);
         var referenceBytes = Files.readAllBytes(appendReferenceFile);

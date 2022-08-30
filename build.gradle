@@ -1,6 +1,14 @@
 plugins {
     id 'java'
+    id 'application'
 }
+
+if (!file("${projectDir}/dev.properties").exists()) {
+    file("${projectDir}/dev.properties").write(file("${projectDir}/dev_default.properties").getText())
+}
+
+System.properties.load(new FileInputStream("dev.properties"));
+
 
 group 'io.xpipe'
 version '1.0-SNAPSHOT'
@@ -81,19 +89,25 @@ dependencies {
     compileOnly "org.openjfx:javafx-controls:18:win"
 }
 
+def targetVersion = System.getProperty('targetXPipeVersion')
+
+configurations {
+    launcher
+}
+
 dependencies {
     // The required X-Pipe apis
-    compileOnly 'io.xpipe:core:0.0.1.5-SNAPSHOT'
-    compileOnly 'io.xpipe:extension:0.0.1.5-SNAPSHOT'
+    compileOnly "io.xpipe:core:$targetVersion"
+    compileOnly "io.xpipe:extension:$targetVersion"
 
     // Jackson annotations needed to indicate that our custom data source is serializable.
     // In case you need to perform a more complex serialization, you can also add your require Jackson libraries here.
     compileOnly group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: "2.13.0"
 
     // X-pipe libraries needed to communicate with the daemon from the testing environment
-    testImplementation 'io.xpipe:extension:0.0.1.5-SNAPSHOT'
-    testImplementation 'io.xpipe:api:0.0.1.5-SNAPSHOT'
-    testImplementation 'io.xpipe:core:0.0.1.5-SNAPSHOT'
+    testImplementation "io.xpipe:extension:$targetVersion"
+    testImplementation "io.xpipe:api:$targetVersion"
+    testImplementation "io.xpipe:core:$targetVersion"
 
     // Lombok libraries to make data source definitions more condensed
     // If you don't like to use lombok, just remove these dependencies
@@ -111,13 +125,30 @@ test {
     // environment, so we are able to pass configuration options to it
     systemProperty "io.xpipe.beacon.daemonArgs", "-Dio.xpipe.app.mode=tray" +
             " -Dio.xpipe.beacon.port=21723" +
-            " -Dio.xpipe.beacon.launchDebug=true" +
-            " -Dio.xpipe.beacon.attachDebugger=false" +
             " -Dio.xpipe.app.dataDir=$projectDir/local/" +
+            " -Dio.xpipe.app.writeLogs=true" +
+            " -Dio.xpipe.app.extensions=$buildDir/libs" +
             " -Dio.xpipe.storage.persist=false"
 
     // Client properties
-    systemProperty 'io.xpipe.beacon.debugOutput', "true"
-    systemProperty 'io.xpipe.beacon.debugExecOutput', "true"
+    systemProperty 'io.xpipe.beacon.printMessages', "${System.getProperty('debugMode')}"
+    systemProperty 'io.xpipe.beacon.printDaemonOutput', "${System.getProperty('debugMode')}"
     systemProperty "io.xpipe.beacon.port", "21723"
+    systemProperty "io.xpipe.beacon.launchDebugDaemon", "${System.getProperty('debugMode')}"
+    systemProperty "io.xpipe.beacon.attachDebuggerToDaemon", "${System.getProperty('attachDebugger')}"
+}
+
+dependencies {
+    launcher "io.xpipe:beacon:$targetVersion"
+    launcher "io.xpipe:api:$targetVersion"
+}
+
+run {
+    classpath = project.files(classpath.files + project.configurations.launcher.files)
+    mainModule = 'io.xpipe.beacon'
+    mainClass = 'io.xpipe.beacon.BeaconServer'
+
+    systemProperty "io.xpipe.beacon.daemonArgs", "-Dio.xpipe.app.mode=gui -Dio.xpipe.app.extensions=$buildDir/libs"
+    systemProperty "io.xpipe.beacon.launchDebugDaemon", "${System.getProperty('debugMode')}"
+    systemProperty "io.xpipe.beacon.attachDebuggerToDaemon", "${System.getProperty('attachDebugger')}"
 }

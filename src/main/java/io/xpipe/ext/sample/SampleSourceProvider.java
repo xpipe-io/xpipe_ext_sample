@@ -133,6 +133,6 @@ public class SampleSourceProvider implements SimpleFileDataSourceProvider<Sample
 
     @Override
     public List<String> getPossibleNames() {
-        return List.of("sample", "sample-source");
+        return List.of("sample", "sample_source");
     }
 }

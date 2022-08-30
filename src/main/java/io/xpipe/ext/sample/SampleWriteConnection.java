@@ -31,7 +31,7 @@ public class SampleWriteConnection extends StreamWriteConnection implements Tabl
                 throw new IllegalArgumentException("Not a tuple of values");
             }
 
-            writer.append(first.asString()).append(source.getDelimiter()).append(second.asString());
+            writer.append(first.asString()).append(source.getDelimiter()).append(second.asString()).append(source.getNewLine().getNewLine());
             return true;
         };
     }
