@@ -4,13 +4,16 @@ import io.xpipe.core.charsetter.Charsetter;
 import io.xpipe.core.charsetter.NewLine;
 import io.xpipe.core.charsetter.StreamCharset;
 import io.xpipe.core.dialog.Dialog;
+import io.xpipe.core.impl.TextSource;
 import io.xpipe.core.source.DataSource;
 import io.xpipe.core.source.DataSourceType;
 import io.xpipe.core.store.DataStore;
 import io.xpipe.core.store.StreamDataStore;
 import io.xpipe.extension.*;
-import io.xpipe.extension.comp.DynamicOptionsBuilder;
+import io.xpipe.extension.util.DialogHelper;
+import io.xpipe.extension.util.DynamicOptionsBuilder;
 import io.xpipe.extension.util.NamedCharacter;
+import io.xpipe.extension.util.SimpleFileDataSourceProvider;
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
@@ -41,7 +44,7 @@ public class SampleSourceProvider implements SimpleFileDataSourceProvider<Sample
     @Override
     public DataSource<?> convert(SampleSource in, DataSourceType t) throws Exception {
         return t == DataSourceType.TEXT ?
-                DataSourceProviders.byId("text").create(in.getStore(), in.getCharset(), in.getNewLine()) :
+                TextSource.builder().store(in.getStore()).charset(in.getCharset()).newLine(in.getNewLine()).build() :
                 SimpleFileDataSourceProvider.super.convert(in, t);
     }
 
@@ -60,7 +63,12 @@ public class SampleSourceProvider implements SimpleFileDataSourceProvider<Sample
                 .addNewLine(newLine)
                 .addCharacter(delimiter, I18n.observable("sampleSource.delimiter"), delimiterNames)
                 .bind(() -> {
-                    return new SampleSource(source.getValue().getStore(), charset.getValue(), newLine.getValue(), delimiter.get());
+                    return SampleSource.builder()
+                            .store(source.getValue().getStore())
+                            .charset(charset.getValue())
+                            .newLine(newLine.getValue())
+                            .delimiter(delimiter.get())
+                            .build();
                 }, source)
                 .build();
     }
@@ -72,8 +80,13 @@ public class SampleSourceProvider implements SimpleFileDataSourceProvider<Sample
         var delimiterQuery = DialogHelper.query(
                 "Delimiter", source.getDelimiter(), false, NamedCharacter.converter(SampleSource.Delimiter.CHARS, false), all);
         return Dialog.chain(cs, nl, delimiterQuery)
-                .evaluateTo(() -> new SampleSource(source.getStore(), cs.getResult(), nl.getResult(), delimiterQuery.getResult()
-                ));
+                .evaluateTo(() -> SampleSource.builder()
+                        .store(source.getStore())
+                        .charset(cs.getResult())
+                        .newLine(nl.getResult())
+                        .delimiter(delimiterQuery.getResult())
+                        .build()
+                );
 
     }
 
@@ -107,7 +120,7 @@ public class SampleSourceProvider implements SimpleFileDataSourceProvider<Sample
         // Note that this detection mechanism is prone to errors and not perfect
         // but it works for the sake of this example
         String firstLine = null;
-        try (BufferedReader bufferedReader = new BufferedReader(Charsetter.get().reader((StreamDataStore) input, result.getCharset()))) {
+        try (BufferedReader bufferedReader = Charsetter.get().reader((StreamDataStore) input, result.getCharset())) {
             firstLine = bufferedReader.readLine();
         }
 
@@ -123,7 +136,12 @@ public class SampleSourceProvider implements SimpleFileDataSourceProvider<Sample
                 .findFirst()
                 .orElse(SampleSource.Delimiter.CHARS.get(0));
 
-        return new SampleSource(input.asNeeded(), result.getCharset(), result.getNewLine(), detectedDelimiter.getCharacter());
+        return SampleSource.builder()
+                .store(input.asNeeded())
+                .charset(result.getCharset())
+                .newLine(result.getNewLine())
+                .delimiter(detectedDelimiter.getCharacter())
+                .build();
     }
 
     @Override

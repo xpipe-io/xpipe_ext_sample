@@ -7,7 +7,7 @@ import io.xpipe.core.data.node.TupleNode;
 import io.xpipe.core.data.node.ValueNode;
 import io.xpipe.core.store.FileStore;
 import io.xpipe.ext.sample.SampleSource;
-import io.xpipe.extension.test.ExtensionTest;
+import io.xpipe.extension.util.ExtensionTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -39,19 +39,35 @@ public class SampleSourceTest extends ExtensionTest {
     public static void setupStorage() throws Exception {
         utf8Spaces = DataSource.create(null, "sample", FileStore.local(utf8SpacesFile));
         utf16Tabs = DataSource.create(null, "sample", FileStore.local(utf16TabsFile));
-        appendReference = DataSource.create(null, "sample", FileStore.local(appendReferenceFile));
+        appendReference = DataSource.create(null, SampleSource.builder()
+                .store(FileStore.local(appendReferenceFile))
+                .charset(StreamCharset.get("windows-1252"))
+                .newLine(NewLine.LF)
+                .delimiter(' ')
+                .build()
+        );
         writeReference = DataSource.create(null, "sample", FileStore.local(writeReferenceFile));
 
         appendOutputFile = Files.createTempFile(null, null);
         appendOutput = DataSource.create(
                 null,
-                new SampleSource(FileStore.local(appendOutputFile), StreamCharset.get("windows-1252"), NewLine.LF, ' ')
+                SampleSource.builder()
+                        .store(FileStore.local(appendOutputFile))
+                        .charset(StreamCharset.get("windows-1252"))
+                        .newLine(NewLine.LF)
+                        .delimiter(' ')
+                        .build()
         );
 
         writeOutputFile = Files.createTempFile(null, null);
         writeOutput = DataSource.create(
                 null,
-                new SampleSource(FileStore.local(writeOutputFile), StreamCharset.UTF16_LE_BOM, NewLine.CRLF, '\t')
+                SampleSource.builder()
+                        .store(FileStore.local(writeOutputFile))
+                        .charset(StreamCharset.UTF16_LE_BOM)
+                        .newLine(NewLine.CRLF)
+                        .delimiter('\t')
+                        .build()
         );
     }
 
@@ -78,7 +94,12 @@ public class SampleSourceTest extends ExtensionTest {
         var empty = Files.createTempFile(null, null);
         var emptySource = DataSource.create(
                 null,
-                new SampleSource(FileStore.local(empty), StreamCharset.UTF32_BOM, NewLine.CRLF, ' ')
+                SampleSource.builder()
+                        .store(FileStore.local(empty))
+                        .charset(StreamCharset.UTF32_BOM)
+                        .newLine(NewLine.CRLF)
+                        .delimiter(' ')
+                        .build()
         );
         emptySource.forwardTo(writeOutput);
 

@@ -4,26 +4,30 @@ package io.xpipe.ext.sample;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import io.xpipe.core.charsetter.NewLine;
 import io.xpipe.core.charsetter.StreamCharset;
+import io.xpipe.core.impl.PreservingTableWriteConnection;
 import io.xpipe.core.source.DataSource;
 import io.xpipe.core.source.TableDataSource;
 import io.xpipe.core.source.TableReadConnection;
 import io.xpipe.core.source.TableWriteConnection;
 import io.xpipe.core.store.DataStore;
 import io.xpipe.core.store.StreamDataStore;
-import io.xpipe.extension.util.AppendingTableWriteConnection;
 import io.xpipe.extension.util.NamedCharacter;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import lombok.Value;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+import lombok.experimental.SuperBuilder;
 import lombok.experimental.UtilityClass;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 import java.util.Optional;
 
-@Value
-@EqualsAndHashCode(callSuper = true)
-@ToString
+@SuperBuilder
+@Jacksonized
+@Getter
+@FieldDefaults(
+        makeFinal = true,
+        level = AccessLevel.PRIVATE
+)
 public class SampleSource extends TableDataSource<StreamDataStore> {
 
     @UtilityClass
@@ -41,20 +45,12 @@ public class SampleSource extends TableDataSource<StreamDataStore> {
     }
 
     public static SampleSource defaultSource(DataStore input) {
-        return new SampleSource(input.asNeeded(), StreamCharset.UTF8, NewLine.LF, ' ');
+        return SampleSource.builder().store(input.asNeeded()).charset(StreamCharset.UTF8).newLine(NewLine.LF).delimiter(' ').build();
     }
 
     StreamCharset charset;
     NewLine newLine;
     Character delimiter;
-
-    @JsonCreator
-    public SampleSource(StreamDataStore store, StreamCharset charset, NewLine newLine, Character delimiter) {
-        super(store);
-        this.charset = charset;
-        this.newLine = newLine;
-        this.delimiter = delimiter;
-    }
 
     @Override
     protected TableWriteConnection newWriteConnection() {
@@ -70,7 +66,7 @@ public class SampleSource extends TableDataSource<StreamDataStore> {
         // Obviously this is not very efficient,
         // however it always works.
         // Feel free to implement your own connection to handle this specific purpose
-        return new AppendingTableWriteConnection(this,newWriteConnection());
+        return new PreservingTableWriteConnection(this, newWriteConnection(), true);
     }
 
     @Override

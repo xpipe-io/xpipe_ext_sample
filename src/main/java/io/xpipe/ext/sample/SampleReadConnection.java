@@ -7,9 +7,11 @@ import io.xpipe.core.data.type.TupleType;
 import io.xpipe.core.data.type.ValueType;
 import io.xpipe.core.source.StreamReadConnection;
 import io.xpipe.core.source.TableReadConnection;
+import io.xpipe.extension.util.TypeConverter;
 
 import java.io.BufferedReader;
 import java.util.List;
+import java.util.OptionalInt;
 
 public class SampleReadConnection extends StreamReadConnection implements TableReadConnection {
 
@@ -29,16 +31,16 @@ public class SampleReadConnection extends StreamReadConnection implements TableR
     }
 
     @Override
-    public int getRowCount() throws Exception {
+    public OptionalInt getRowCount() throws Exception {
         // Some data sources contain header information about the
         // amount of table rose included in the file without having to read the complete file.
         // However, as this is not the case with this simple format,
         // we just return -1 instead.
-        return -1;
+        return OptionalInt.empty();
     }
 
     @Override
-    public void withRows(DataStructureNodeAcceptor<TupleNode> lineAcceptor) throws Exception {
+    public int withRows(DataStructureNodeAcceptor<TupleNode> lineAcceptor) throws Exception {
         try (BufferedReader bufferedReader = new BufferedReader(reader)) {
             String line = null;
             while ((line = bufferedReader.readLine()) != null) {
@@ -50,8 +52,9 @@ public class SampleReadConnection extends StreamReadConnection implements TableR
                 if (split.length != 2) {
                     throw new IllegalArgumentException("Not a valid row");
                 }
-                lineAcceptor.accept(TupleNode.of(List.of(ValueNode.immutable(split[0], false), ValueNode.immutable(split[1], false))));
+                lineAcceptor.accept(TupleNode.of(List.of(ValueNode.of(split[0]), ValueNode.of(split[1]))));
             }
         }
+        return 0;
     }
 }
