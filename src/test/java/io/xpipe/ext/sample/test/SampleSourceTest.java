@@ -5,7 +5,7 @@ import io.xpipe.core.charsetter.NewLine;
 import io.xpipe.core.charsetter.StreamCharset;
 import io.xpipe.core.data.node.TupleNode;
 import io.xpipe.core.data.node.ValueNode;
-import io.xpipe.core.store.FileStore;
+import io.xpipe.core.impl.FileStore;
 import io.xpipe.ext.sample.SampleSource;
 import io.xpipe.extension.util.ExtensionTest;
 import org.junit.jupiter.api.Assertions;
@@ -96,7 +96,7 @@ public class SampleSourceTest extends ExtensionTest {
                 null,
                 SampleSource.builder()
                         .store(FileStore.local(empty))
-                        .charset(StreamCharset.UTF32_BOM)
+                        .charset(StreamCharset.UTF32_LE_BOM)
                         .newLine(NewLine.CRLF)
                         .delimiter(' ')
                         .build()

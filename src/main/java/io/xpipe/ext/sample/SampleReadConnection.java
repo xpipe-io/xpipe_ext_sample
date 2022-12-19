@@ -5,7 +5,8 @@ import io.xpipe.core.data.node.TupleNode;
 import io.xpipe.core.data.node.ValueNode;
 import io.xpipe.core.data.type.TupleType;
 import io.xpipe.core.data.type.ValueType;
-import io.xpipe.core.source.StreamReadConnection;
+import io.xpipe.core.impl.StreamReadConnection;
+import io.xpipe.core.impl.StreamReadConnection;
 import io.xpipe.core.source.TableReadConnection;
 import io.xpipe.extension.util.TypeConverter;
 
@@ -40,7 +41,7 @@ public class SampleReadConnection extends StreamReadConnection implements TableR
     }
 
     @Override
-    public int withRows(DataStructureNodeAcceptor<TupleNode> lineAcceptor) throws Exception {
+    public void withRows(DataStructureNodeAcceptor<TupleNode> lineAcceptor) throws Exception {
         try (BufferedReader bufferedReader = new BufferedReader(reader)) {
             String line = null;
             while ((line = bufferedReader.readLine()) != null) {
@@ -55,6 +56,5 @@ public class SampleReadConnection extends StreamReadConnection implements TableR
                 lineAcceptor.accept(TupleNode.of(List.of(ValueNode.of(split[0]), ValueNode.of(split[1]))));
             }
         }
-        return 0;
     }
 }

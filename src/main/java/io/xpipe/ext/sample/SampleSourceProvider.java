@@ -17,6 +17,7 @@ import io.xpipe.extension.util.SimpleFileDataSourceProvider;
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
+import javafx.scene.layout.Region;
 
 import java.io.BufferedReader;
 import java.util.Comparator;
@@ -49,7 +50,7 @@ public class SampleSourceProvider implements SimpleFileDataSourceProvider<Sample
     }
 
     @Override
-    public javafx.scene.layout.Region configGui(Property<SampleSource> source, Property<SampleSource> appliedSource, boolean all) {
+    public Region configGui(Property<SampleSource> source, boolean preferQuiet) throws Exception {
         var charset = new SimpleObjectProperty<StreamCharset>(source.getValue().getCharset());
         var newLine = new SimpleObjectProperty<NewLine>(source.getValue().getNewLine());
 
@@ -59,7 +60,8 @@ public class SampleSourceProvider implements SimpleFileDataSourceProvider<Sample
             delimiterNames.put(d.getCharacter(), I18n.observable(d.getTranslationKey()));
         });
 
-        return new DynamicOptionsBuilder<SampleSource>().addCharset(charset)
+        return new DynamicOptionsBuilder()
+                .addCharset(charset)
                 .addNewLine(newLine)
                 .addCharacter(delimiter, I18n.observable("sampleSource.delimiter"), delimiterNames)
                 .bind(() -> {
